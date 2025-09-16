@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  name      String
+  email     String    @unique
+  password  String
+  status    String    @default("ACTIVE")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  memberships Membership[]
+  attendances Attendance[]
+  customers   Customer[]
+  queues      Queue[] @relation("AttendantQueue")
+
+  @@map("users")
+}
+
+model Organization {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  name      String
+  cnpj      String    @unique
+  ie        String?
+  cep       String?
+  address   String
+  number    String?
+  state     String?
+  city      String?
+  email     String?
+  phone     String?
+  primaryColor   String?
+  secondaryColor String?
+  logoUrl        String?
+  slug      String    @unique
+  status    String    @default("ACTIVE")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  memberships Membership[]
+  attendances Attendance[]
+  customers   Customer[]
+  queues      Queue[]
+
+  @@map("organizations")
+}
+
+model Membership {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String    @map("user_id")
+  orgId     String    @map("org_id")
+  role      String
+  status    String    @default("ACTIVE")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+  @@map("memberships")
+}
+
+model Attendance {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String    @map("user_id")
+  orgId     String    @map("org_id")
+  customerId String?  @map("customer_id")
+  checkIn   DateTime  @map("check_in") @db.Timestamptz(6)
+  checkOut  DateTime? @map("check_out") @db.Timestamptz(6)
+  status    String    @default("ACTIVE")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [orgId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+
+  @@map("attendance")
+}
+
+model Customer {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String    @map("user_id")
+  orgId     String    @map("org_id")
+  name      String
+  email     String?
+  status    String    @default("ACTIVE")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  attendances Attendance[]
+  queues      Queue[]
+
+  @@map("customer")
+}
+
+model Queue {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  orgId       String   @map("org_id")
+  customerId  String   @map("customer_id")
+  attendantId String?  @map("attendant_id")
+  status      String   @default("WAITING") // "WAITING", "IN_PROGRESS", "DONE"
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  attendant    User?        @relation("AttendantQueue", fields: [attendantId], references: [id])
+
+  @@map("queue")
+}
