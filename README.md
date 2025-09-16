@@ -7,7 +7,6 @@ Sistema SaaS completo para gerenciamento de atendimentos e controle de ponto dig
 - **Landing Page** - Página inicial atrativa com informações do produto
 - **Autenticação** - Sistema completo de login e registro com NextAuth.js
 - **Dashboard** - Interface intuitiva para gerenciar atendimentos
-- **Controle de Ponto** - Registro de entrada e saída com cálculo automático de horas
 - **Relatórios** - Estatísticas detalhadas de presença e horas trabalhadas
 - **Responsivo** - Interface adaptada para desktop e mobile
 
