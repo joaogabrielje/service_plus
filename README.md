@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AttendanceHub - Sistema de Controle de Ponto
 
-## Getting Started
+Sistema SaaS completo para gerenciamento de atendimentos e controle de ponto digital, desenvolvido com Next.js, TypeScript, Tailwind CSS e Prisma.
 
-First, run the development server:
+## 🚀 Funcionalidades
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Landing Page** - Página inicial atrativa com informações do produto
+- **Autenticação** - Sistema completo de login e registro com NextAuth.js
+- **Dashboard** - Interface intuitiva para gerenciar atendimentos
+- **Controle de Ponto** - Registro de entrada e saída com cálculo automático de horas
+- **Relatórios** - Estatísticas detalhadas de presença e horas trabalhadas
+- **Responsivo** - Interface adaptada para desktop e mobile
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tecnologias
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js 15** - Framework React com App Router
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização utilitária
+- **Prisma** - ORM para PostgreSQL
+- **NextAuth.js** - Autenticação
+- **Shadcn/ui** - Componentes de interface
+- **Date-fns** - Manipulação de datas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 Instalação
 
-## Learn More
+1. Clone o repositório
+2. Instale as dependências: `npm install`
+3. Configure as variáveis de ambiente no arquivo `.env`:
+   \`\`\`
+   DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"
+   \`\`\`
+4. Execute as migrações do banco: `npm run db:push`
+5. Inicie o servidor de desenvolvimento: `npm run dev`
 
-To learn more about Next.js, take a look at the following resources:
+## 🗄️ Estrutura do Banco
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+O sistema utiliza as seguintes tabelas:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **users** - Dados dos usuários
+- **organizations** - Organizações/empresas
+- **memberships** - Relacionamento usuário-organização
+- **attendance** - Registros de entrada e saída
 
-## Deploy on Vercel
+## 📱 Como Usar
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Acesse a landing page e clique em "Começar Grátis"
+2. Crie sua conta ou faça login
+3. No dashboard, registre sua entrada clicando em "Agora" no campo de entrada
+4. Ao final do expediente, registre sua saída
+5. Visualize suas estatísticas e histórico de atendimentos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔧 Scripts Disponíveis
+
+- `npm run dev` - Inicia o servidor de desenvolvimento
+- `npm run build` - Gera build de produção
+- `npm run start` - Inicia servidor de produção
+- `npm run db:generate` - Gera cliente Prisma
+- `npm run db:push` - Aplica mudanças no banco
+- `npm run db:studio` - Abre Prisma Studio
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
