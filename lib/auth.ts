@@ -94,10 +94,15 @@ export const authOptions: NextAuthOptions = {
             status: "ACTIVE"
           }
         });
+        console.log('Membership encontrado:', membership);
         if (membership) {
           token.orgId = membership.orgId;
+          token.role = membership.role;
+          console.log('Token atualizado com role:', membership.role);
         } else {
           token.orgId = undefined;
+          token.role = undefined;
+          console.log('Nenhum membership encontrado para usuário:', user.id);
         }
       }
       return token;
@@ -106,7 +111,9 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).orgId = token.orgId as string | undefined;
+        (session.user as any).role = token.role as string | undefined;
         (session.user as any).image = token.image as string | undefined;
+        console.log('Session callback - role definida como:', token.role);
       }
       return session;
     },

@@ -18,6 +18,11 @@ export function DashboardHeader() {
   }
 
   const isAdmin = (session?.user as any)?.role === "ADMIN";
+  
+  // Debug: log session data
+  console.log('Session data:', session);
+  console.log('User role:', (session?.user as any)?.role);
+  console.log('Is admin:', isAdmin);
 
   return (
     <header className="bg-background border-b border-border px-6 sticky top-0 z-30" style={{ height: '65px' }}>

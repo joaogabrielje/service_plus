@@ -40,7 +40,7 @@ export default function NewUserPage() {
       <div className="w-full md:w-1/2 h-full flex flex-col justify-center items-stretch gap-8">
         <div className="w-full h-full flex flex-col justify-center">
           <div className="w-full h-full flex items-center">
-            <RegisterForm />
+            <RegisterForm isAdminForm={true} />
           </div>
         </div>
       </div>

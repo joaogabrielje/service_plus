@@ -9,6 +9,11 @@ export default function EditOrganizationPage() {
   const router = useRouter();
   const [org, setOrg] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [orgUsers, setOrgUsers] = React.useState<any[]>([]);
+  const [allUsers, setAllUsers] = React.useState<any[]>([]);
+  const [showLinkModal, setShowLinkModal] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState('');
+  const [selectedRole, setSelectedRole] = React.useState('USER');
 
   // Estados e cidades para select dinâmico
   const estados = [
@@ -49,6 +54,7 @@ export default function EditOrganizationPage() {
 
   React.useEffect(() => {
     if (params?.id) {
+      // Carregar dados da organização
       fetch(`/api/organizations/${params.id}`)
         .then(res => res.json())
         .then(data => {
@@ -57,8 +63,32 @@ export default function EditOrganizationPage() {
           setCidade(data.city || "");
           setLoading(false);
         });
+      
+      // Carregar usuários da organização
+      loadOrgUsers();
     }
   }, [params]);
+
+  React.useEffect(() => {
+    // Carregar todos os usuários quando o modal for aberto
+    if (showLinkModal) {
+      loadAllUsers();
+    }
+  }, [showLinkModal]);
+
+  const loadOrgUsers = () => {
+    if (params?.id) {
+      fetch(`/api/organizations/${params.id}/users`)
+        .then(res => res.json())
+        .then(data => setOrgUsers(data));
+    }
+  };
+
+  const loadAllUsers = () => {
+    fetch('/api/users/all')
+      .then(res => res.json())
+      .then(data => setAllUsers(data));
+  };
 
   React.useEffect(() => {
     setCidades(cidadesPorEstado[estado] || []);
@@ -80,11 +110,41 @@ export default function EditOrganizationPage() {
     }
   };
 
+  const handleLinkUser = async () => {
+    if (!selectedUser || !params?.id) return;
+    
+    try {
+      const res = await fetch('/api/users/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser,
+          orgId: params.id,
+          role: selectedRole
+        })
+      });
+
+      if (res.ok) {
+        setShowLinkModal(false);
+        setSelectedUser('');
+        setSelectedRole('USER');
+        loadOrgUsers(); // Recarregar lista de usuários
+        alert('Usuário vinculado com sucesso!');
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Erro ao vincular usuário');
+      }
+    } catch (error) {
+      alert('Erro ao vincular usuário');
+    }
+  };
+
   if (loading) return <div className="p-8">Carregando...</div>;
   if (!org || org.error) return <div className="p-8">Empresa não encontrada.</div>;
 
   return (
     <div className="flex gap-8 p-8">
+      {/* Coluna da Esquerda - Edição da Empresa */}
       <div className="w-1/2">
         <h1 className="text-2xl font-bold mb-4">Editar Empresa</h1>
         <form className="space-y-4" onSubmit={handleSubmit} encType="multipart/form-data">
@@ -179,6 +239,121 @@ export default function EditOrganizationPage() {
           </div>
         </form>
       </div>
+
+      {/* Coluna da Direita - Gerenciamento de Usuários */}
+      <div className="w-1/2">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Usuários da Empresa</h2>
+          <button
+            type="button"
+            onClick={() => setShowLinkModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            + Vincular Usuário
+          </button>
+        </div>
+
+        {/* Lista de Usuários */}
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {orgUsers.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Nenhum usuário vinculado ainda.</p>
+          ) : (
+            orgUsers.map(membership => (
+              <div key={membership.id} className="border rounded-lg p-4 bg-white shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold">{membership.user.name}</h3>
+                    <p className="text-sm text-gray-600">{membership.user.email}</p>
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${
+                      membership.role === 'ADMIN' 
+                        ? 'bg-red-100 text-red-800' 
+                        : membership.role === 'USER'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {membership.role}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      membership.status === 'ACTIVE' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {membership.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Modal para Vincular Usuário */}
+      {showLinkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">Vincular Usuário à Empresa</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Selecionar Usuário</label>
+                <select 
+                  value={selectedUser} 
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="">Selecione um usuário</option>
+                  {allUsers
+                    .filter(user => !orgUsers.some(orgUser => orgUser.user.id === user.id))
+                    .map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Role</label>
+                <select 
+                  value={selectedRole} 
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="USER">Usuário</option>
+                  <option value="ADMIN">Administrador</option>
+                  <option value="EXTERNAL">Externo</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                type="button"
+                onClick={handleLinkUser}
+                disabled={!selectedUser}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                Vincular
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setSelectedUser('');
+                  setSelectedRole('USER');
+                }}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
