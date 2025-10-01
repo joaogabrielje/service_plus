@@ -21,8 +21,30 @@ export function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
+  const handleSignOut = async () => {
+    try {
+      console.log('Iniciando logout...')
+      
+      // Primeiro, limpar sessões no servidor
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      // Depois, fazer logout do NextAuth
+      await signOut({ 
+        callbackUrl: "/",
+        redirect: true
+      })
+    } catch (error) {
+      console.error('Erro no logout:', error)
+      // Fallback: redirecionar manualmente e limpar localStorage
+      localStorage.clear()
+      sessionStorage.clear()
+      window.location.href = "/"
+    }
   }
 
   return (

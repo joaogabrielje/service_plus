@@ -14,6 +14,13 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     CredentialsProvider({
       name: "credentials",
@@ -71,6 +78,11 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      console.log('SignIn callback chamado:', { user, account, profile });
+      // Permitir qualquer login (Google ou credentials)
+      return true;
+    },
     async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
@@ -81,28 +93,41 @@ export const authOptions: NextAuthOptions = {
           const picture = (profile as any).picture as string;
           token.image = picture;
           // Atualiza no banco se não estiver salvo
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { image: picture },
-          });
-        }
-        // Buscar vínculo ativo do usuário
-        const membership = await prisma.membership.findFirst({
-          where: {
-            userId: user.id,
-            isDeleted: false,
-            status: "ACTIVE"
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { image: picture },
+            });
+          } catch (error) {
+            console.log('Erro ao atualizar imagem do usuário:', error);
           }
-        });
-        console.log('Membership encontrado:', membership);
-        if (membership) {
-          token.orgId = membership.orgId;
-          token.role = membership.role;
-          console.log('Token atualizado com role:', membership.role);
-        } else {
+        }
+      }
+      
+      // Sempre buscar membership atualizado (mesmo em refreshes de token)
+      if (token.id) {
+        try {
+          const membership = await prisma.membership.findFirst({
+            where: {
+              userId: token.id as string,
+              isDeleted: false,
+              status: "ACTIVE"
+            }
+          });
+          console.log('Membership encontrado:', membership);
+          if (membership) {
+            token.orgId = membership.orgId;
+            token.role = membership.role;
+            console.log('Token atualizado com role:', membership.role);
+          } else {
+            token.orgId = undefined;
+            token.role = undefined;
+            console.log('Nenhum membership encontrado para usuário:', token.id);
+          }
+        } catch (error) {
+          console.log('Erro ao buscar membership:', error);
           token.orgId = undefined;
           token.role = undefined;
-          console.log('Nenhum membership encontrado para usuário:', user.id);
         }
       }
       return token;
@@ -119,6 +144,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-  signIn: "/auth/login",
+    signIn: "/auth/login",
   },
 }

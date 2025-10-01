@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { Sidebar } from "@/components/sidebar"
 import { DashboardHeader } from "@/components/header"
+import { ReadonlyBanner } from "@/components/readonly-banner"
 import { prisma } from "@/lib/prisma"
 
 export default async function DashboardLayout({
@@ -44,7 +45,7 @@ export default async function DashboardLayout({
       <div className="lg:ml-64">
         <DashboardHeader />
         <main className="p-6">
-          
+          <ReadonlyBanner />
           {React.cloneElement(children as React.ReactElement, { isLimited })}
         </main>
       </div>
