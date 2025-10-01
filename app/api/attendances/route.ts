@@ -7,18 +7,25 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    // O id do usuário está em session.user?.sub
+  // Forçar tipagem para acessar id
+  const userId = (session?.user as any)?.id
+    if (!userId) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
     const attendances = await prisma.attendance.findMany({
       where: {
-        userId: session.user.id,
+        userId: userId,
       },
       orderBy: {
         checkIn: "desc",
       },
       take: 50, // Limit to last 50 records
+      include: {
+        customer: true,
+        supportType: true,
+      },
     })
 
     return NextResponse.json({ attendances })
@@ -32,11 +39,13 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+  // Forçar tipagem para acessar id
+  const userId = (session?.user as any)?.id
+    if (!userId) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const { checkIn, checkOut } = await request.json()
+  const { checkIn, checkOut, customerId, supportTypeId, supportMode, notes } = await request.json()
 
     if (!checkIn) {
       return NextResponse.json({ error: "Data de entrada é obrigatória" }, { status: 400 })
@@ -56,6 +65,8 @@ export async function POST(request: NextRequest) {
         data: {
           name: "Organização Padrão",
           slug: "default",
+          cnpj: "00000000000000",
+          address: "Endereço padrão",
         },
       })
     }
@@ -63,12 +74,24 @@ export async function POST(request: NextRequest) {
     // Create attendance record
     const attendance = await prisma.attendance.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         orgId: organization.id,
+        customerId: customerId || null,
         checkIn: new Date(checkIn),
         checkOut: checkOut ? new Date(checkOut) : null,
+  supportTypeId: supportTypeId || null,
+        supportMode: supportMode || null,
+        notes: notes || null,
       },
     })
+
+    // Atualiza o campo lastContactedAt do cliente
+    if (attendance.customerId) {
+      await prisma.customer.update({
+        where: { id: attendance.customerId },
+        data: { lastContactedAt: attendance.checkIn }
+      })
+    }
 
     return NextResponse.json({ attendance }, { status: 201 })
   } catch (error) {

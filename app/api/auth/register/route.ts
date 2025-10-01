@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json()
+    const { name, email, password, orgId, role } = await request.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Nome, email e senha são obrigatórios" }, { status: 400 })
@@ -30,6 +30,17 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
       },
     })
+
+    // Só vincula membership se orgId for enviado
+    if (orgId) {
+      await prisma.membership.create({
+        data: {
+          userId: user.id,
+          orgId,
+          role: role || "USER"
+        }
+      })
+    }
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user

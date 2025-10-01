@@ -60,7 +60,7 @@ export function AttendanceList({ refresh }: AttendanceListProps) {
   }
 
   return (
-    <Card>
+    <Card className="flex flex-col h-full min-h-[600px]">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calendar className="mr-2 h-5 w-5" />
@@ -68,7 +68,7 @@ export function AttendanceList({ refresh }: AttendanceListProps) {
         </CardTitle>
         <CardDescription>Seus registros de entrada e saída</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-y-auto">
         {error && <div className="text-center py-8 text-muted-foreground">{error}</div>}
 
         {!error && attendances.length === 0 && (
@@ -80,7 +80,7 @@ export function AttendanceList({ refresh }: AttendanceListProps) {
             {attendances.map((attendance) => (
               <div
                 key={attendance.id}
-                className="flex items-center justify-between p-4 border border-border rounded-lg"
+                className="p-4 border border-border rounded-lg"
               >
                 <div className="flex items-center space-x-4">
                   <Clock className="h-5 w-5 text-muted-foreground" />
@@ -94,10 +94,23 @@ export function AttendanceList({ refresh }: AttendanceListProps) {
                         <> • Saída: {format(new Date(attendance.checkOut), "HH:mm", { locale: ptBR })}</>
                       )}
                     </p>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <span className="font-semibold">Cliente:</span> {attendance.customer?.name || "-"} <br />
+                      <span className="font-semibold">Atendimento:</span> {
+                        typeof attendance.supportType === "object" && attendance.supportType?.name
+                          ? attendance.supportType.name
+                          : typeof attendance.supportType === "string"
+                            ? attendance.supportType
+                            : "-"
+                      } <br />
+                      <span className="font-semibold">Modo:</span> {attendance.supportMode || "-"}
+                    </div>
+                    {attendance.notes && (
+                      <div className="text-xs mt-1"><span className="font-semibold">Obs:</span> {attendance.notes}</div>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mt-2">
                   <Badge variant={attendance.checkOut ? "default" : "secondary"}>
                     {calculateHours(attendance.checkIn, attendance.checkOut)}
                   </Badge>

@@ -28,51 +28,51 @@ export async function POST(request: Request) {
     const primaryColor = formData.get("primaryColor") as string;
     const secondaryColor = formData.get("secondaryColor") as string;
     const slug = name ? name.toLowerCase().replace(/\s+/g, "-") : "";
+    console.log('[ORG POST] Dados recebidos:', {
+      name, cnpj, ie, cep, address, state, city, number, email, phone, primaryColor, secondaryColor
+    });
+    // logoUrl removido temporariamente
     let logoUrl = "";
-    const logoFile = formData.get("logo");
-    if (logoFile && typeof logoFile === "object" && "arrayBuffer" in logoFile) {
-      const buffer = Buffer.from(await logoFile.arrayBuffer());
-      const ext = logoFile.name.split(".").pop();
-      const fileName = `${slug}-${Date.now()}.${ext}`;
-      const fs = require("fs");
-      const path = require("path");
-      const logosDir = path.join(process.cwd(), "public", "logos");
-      if (!fs.existsSync(logosDir)) fs.mkdirSync(logosDir);
-      const filePath = path.join(logosDir, fileName);
-      fs.writeFileSync(filePath, buffer);
-      logoUrl = `/logos/${fileName}`;
-    }
 
     // Validação do CNPJ
     if (!validarCNPJ(cnpj)) {
+      console.log('[ORG POST] CNPJ inválido:', cnpj);
       return NextResponse.json({ error: "CNPJ inválido" }, { status: 400 });
     }
 
     // Verificação de duplicidade
     const exists = await prisma.organization.findUnique({ where: { cnpj } });
     if (exists) {
+      console.log('[ORG POST] CNPJ já cadastrado:', cnpj);
       return NextResponse.json({ error: "CNPJ já cadastrado" }, { status: 400 });
     }
 
     // Criação da empresa
-    const org = await prisma.organization.create({
-      data: {
-        name,
-        cnpj,
-        ie,
-        cep,
-        address,
-        state,
-        city,
-        number,
-        email,
-        phone,
-        primaryColor,
-        secondaryColor,
-        logoUrl,
-        slug,
-      },
-    });
+    let org = null;
+    try {
+      org = await prisma.organization.create({
+        data: {
+          name,
+          cnpj,
+          ie,
+          cep,
+          address,
+          state,
+          city,
+          number,
+          email,
+          phone,
+          primaryColor,
+          secondaryColor,
+          logoUrl,
+          slug,
+        },
+      });
+      console.log('[ORG POST] Organização criada:', org);
+    } catch (err) {
+      console.log('[ORG POST] Erro ao criar organização:', err);
+      return NextResponse.json({ error: "Erro ao criar organização" }, { status: 500 });
+    }
 
     return NextResponse.json(org, { status: 201 });
   } catch (error) {

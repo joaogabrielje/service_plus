@@ -1,3 +1,41 @@
+// NextAuth required models
+model Account {
+  id                 String  @id @default(dbgenerated("gen_random_uuid()"))
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,8 +49,10 @@ model User {
   id        String    @id @default(dbgenerated("gen_random_uuid()"))
   name      String
   email     String    @unique
-  password  String
+  password  String?
   status    String    @default("ACTIVE")
+  image     String?
+  emailVerified DateTime?
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -20,9 +60,23 @@ model User {
   attendances Attendance[]
   customers   Customer[]
   queues      Queue[] @relation("AttendantQueue")
+  linkRequests OrganizationLinkRequest[]
+  accounts    Account[]
+  sessions    Session[]
 
   @@map("users")
 }
+  model OrganizationLinkRequest {
+    id        String   @id @default(dbgenerated("gen_random_uuid()"))
+    userId    String
+    orgId     String
+    status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+    createdAt DateTime? @default(now())
+    updatedAt DateTime? @updatedAt
+
+    user        User         @relation(fields: [userId], references: [id])
+    organization Organization @relation(fields: [orgId], references: [id])
+  }
 
 model Organization {
   id        String    @id @default(dbgenerated("gen_random_uuid()"))
@@ -36,6 +90,8 @@ model Organization {
   city      String?
   email     String?
   phone     String?
+  description String?
+  isDeleted   Boolean @default(false)
   primaryColor   String?
   secondaryColor String?
   logoUrl        String?
@@ -48,6 +104,8 @@ model Organization {
   attendances Attendance[]
   customers   Customer[]
   queues      Queue[]
+  supportTypes SupportType[]
+  linkRequests OrganizationLinkRequest[]
 
   @@map("organizations")
 }
@@ -57,6 +115,8 @@ model Membership {
   userId    String    @map("user_id")
   orgId     String    @map("org_id")
   role      String
+  permissions Json?
+  isDeleted   Boolean @default(false)
   status    String    @default("ACTIVE")
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -68,13 +128,35 @@ model Membership {
   @@map("memberships")
 }
 
+model SupportType {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  name      String
+  orgId     String   @map("org_id")
+  status    String   @default("ACTIVE")
+  isDeleted Boolean  @default(false)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  attendances Attendance[]
+
+  @@unique([name, orgId])
+  @@map("support_type")
+}
+
 model Attendance {
   id        String    @id @default(dbgenerated("gen_random_uuid()"))
   userId    String    @map("user_id")
   orgId     String    @map("org_id")
   customerId String?  @map("customer_id")
+  supportTypeId String? @map("support_type_id")
   checkIn   DateTime  @map("check_in") @db.Timestamptz(6)
   checkOut  DateTime? @map("check_out") @db.Timestamptz(6)
+  supportMode String? @map("support_mode") // "remoto" ou "presencial"
+  rating      Int?
+  feedback    String?
+  isDeleted   Boolean @default(false)
+  notes      String?  @map("notes")
   status    String    @default("ACTIVE")
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -82,24 +164,41 @@ model Attendance {
   user        User         @relation(fields: [userId], references: [id])
   organization Organization @relation(fields: [orgId], references: [id])
   customer    Customer?    @relation(fields: [customerId], references: [id])
+  supportType SupportType? @relation(fields: [supportTypeId], references: [id])
 
   @@map("attendance")
 }
 
 model Customer {
-  id        String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String    @map("user_id")
-  orgId     String    @map("org_id")
-  name      String
-  email     String?
-  status    String    @default("ACTIVE")
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId       String    @map("user_id")
+  orgId        String    @map("org_id")
+  name         String
+  email        String?
+  cpfCnpj      String?
+  phone1       String?
+  phone2       String?
+  address      String?
+  number       String?
+  neighborhood String?
+  city         String?
+  state        String?
+  cep          String?
+  tipoPessoa   String?   // "FISICA" ou "JURIDICA"
+  obs          String?
+  tags         String[]  // segmentação
+  preferredContact String? // whatsapp, telefone, email
+  lastContactedAt DateTime?
+  customFields  Json?
+  isDeleted     Boolean   @default(false)
+  status        String    @default("ACTIVE")
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   organization Organization @relation(fields: [orgId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
-  attendances Attendance[]
-  queues      Queue[]
+  user         User         @relation(fields: [userId], references: [id])
+  attendances  Attendance[]
+  queues       Queue[]
 
   @@map("customer")
 }
@@ -116,6 +215,9 @@ model Queue {
   organization Organization @relation(fields: [orgId], references: [id])
   customer     Customer     @relation(fields: [customerId], references: [id])
   attendant    User?        @relation("AttendantQueue", fields: [attendantId], references: [id])
+  priority    Int?
+  scheduledAt DateTime?
+  isDeleted   Boolean  @default(false)
 
   @@map("queue")
 }

@@ -17,20 +17,32 @@ export function DashboardHeader() {
       .slice(0, 2)
   }
 
-  return (
-    <header className="bg-background border-b border-border px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="lg:ml-64">
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        </div>
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
 
+  return (
+    <header className="bg-background border-b border-border px-6 sticky top-0 z-30" style={{ height: '65px' }}>
+      <div className="flex items-center justify-between h-full w-full">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          {isAdmin && (
+            <Button type="button" variant="outline" className="border border-secondary">
+              <a href="/dashboard/organizations">Gerenciar Empresas</a>
+            </Button>
+          )}
+        </div>
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-
           <div className="flex items-center space-x-3">
             <Avatar>
+              {session?.user?.image && (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || "Avatar"}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              )}
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {session?.user?.name ? getInitials(session.user.name) : "U"}
               </AvatarFallback>

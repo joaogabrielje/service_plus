@@ -156,7 +156,7 @@ export default function NewOrganizationPage() {
             <input id="logo" name="logo" type="file" accept="image/*" className="w-full border border-border rounded px-3 py-2" />
           </div>
           <div className="flex gap-2 mt-6">
-            <button type="submit" className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-foreground transition">Cadastrar</button>
+            <button type="submit" className="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700 hover:scale-105 transition-all font-semibold">Cadastrar</button>
             <Link href="/dashboard/organizations" className="px-4 py-2 rounded border border-border">Cancelar</Link>
           </div>
         </form>

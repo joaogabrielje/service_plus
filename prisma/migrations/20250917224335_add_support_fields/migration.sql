@@ -1,19 +1,70 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
 
-  - You are about to drop the column `customer` on the `attendance` table. All the data in the column will be lost.
-  - You are about to drop the column `location` on the `attendance` table. All the data in the column will be lost.
-  - You are about to drop the column `observation` on the `attendance` table. All the data in the column will be lost.
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
 
-*/
--- AlterTable
-ALTER TABLE "attendance" DROP COLUMN "customer",
-DROP COLUMN "location",
-DROP COLUMN "observation",
-ADD COLUMN     "customer_id" TEXT;
+-- CreateTable
+CREATE TABLE "organizations" (
+    "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+    "name" TEXT NOT NULL,
+    "cnpj" TEXT NOT NULL,
+    "ie" TEXT,
+    "cep" TEXT,
+    "address" TEXT NOT NULL,
+    "number" TEXT,
+    "state" TEXT,
+    "city" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "primaryColor" TEXT,
+    "secondaryColor" TEXT,
+    "logoUrl" TEXT,
+    "slug" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
 
--- AlterTable
-ALTER TABLE "memberships" ADD COLUMN     "permissions" JSONB;
+    CONSTRAINT "organizations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "memberships" (
+    "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" TEXT NOT NULL,
+    "org_id" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "memberships_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "attendance" (
+    "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" TEXT NOT NULL,
+    "org_id" TEXT NOT NULL,
+    "customer_id" TEXT,
+    "check_in" TIMESTAMPTZ(6) NOT NULL,
+    "check_out" TIMESTAMPTZ(6),
+    "support_type" TEXT,
+    "support_mode" TEXT,
+    "notes" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "attendance_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "customer" (
@@ -41,6 +92,18 @@ CREATE TABLE "queue" (
 
     CONSTRAINT "queue_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "organizations_cnpj_key" ON "organizations"("cnpj");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "organizations_slug_key" ON "organizations"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "memberships_user_id_org_id_key" ON "memberships"("user_id", "org_id");
 
 -- AddForeignKey
 ALTER TABLE "memberships" ADD CONSTRAINT "memberships_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

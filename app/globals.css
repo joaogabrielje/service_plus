@@ -12,10 +12,28 @@
   .outline-ring {
     outline: 1px solid var(--ring);
   }
+  .border-secondary {
+    border-color: var(--secondary) !important;
+  }
+  .border-primary {
+    border-color: var(--primary) !important;
+  }
 }
 
 /* ===== Color tokens ===== */
 :root {
+  --button-save: #22c55e;
+  --button-save-foreground: #ffffff;
+  --button-save-border: #22c55e;
+  --button-cancel: #ef4444;
+  --button-cancel-foreground: #ffffff;
+  --button-cancel-border: #ef4444;
+  .border-save {
+    border-color: var(--button-save-border) !important;
+  }
+  .border-cancel {
+    border-color: var(--button-cancel-border) !important;
+  }
   --background: #ffffff;
   --foreground: #4b5563;
   --card: #f9fafb;
@@ -89,7 +107,7 @@
 
 /* ===== Base styles ===== */
 @layer base {
-  /* Removido bloco universal vazio para evitar erro de regra vazia e referência à classe customizada border-border */
+  /* Removido bloco universal vazio para evitar erro de regra de classe vazia */
   body {
     @apply bg-background text-foreground font-sans;
   }
