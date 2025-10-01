@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    console.log('PUT /api/attendances/[id] chamada');
     const session = await getServerSession(authOptions)
+    console.log('session', session);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
@@ -13,6 +15,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { checkIn, checkOut } = await request.json()
     const attendanceId = params.id
+    console.log('attendanceId', attendanceId, 'checkIn', checkIn, 'checkOut', checkOut);
 
     // Verify the attendance belongs to the user
     const existingAttendance = await prisma.attendance.findFirst({
@@ -21,6 +24,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         userId: session.user.id,
       },
     })
+    console.log('existingAttendance', existingAttendance);
 
     if (!existingAttendance) {
       return NextResponse.json({ error: "Atendimento não encontrado" }, { status: 404 })
@@ -34,44 +38,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         checkOut: checkOut ? new Date(checkOut) : null,
       },
     })
+    console.log('attendance atualizado', attendance);
 
     return NextResponse.json({ attendance })
   } catch (error) {
     console.error("Error updating attendance:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const attendanceId = params.id
-
-    // Verify the attendance belongs to the user
-    const existingAttendance = await prisma.attendance.findFirst({
-      where: {
-        id: attendanceId,
-        userId: session.user.id,
-      },
-    })
-
-    if (!existingAttendance) {
-      return NextResponse.json({ error: "Atendimento não encontrado" }, { status: 404 })
-    }
-
-    // Delete attendance
-    await prisma.attendance.delete({
-      where: { id: attendanceId },
-    })
-
-    return NextResponse.json({ message: "Atendimento excluído com sucesso" })
-  } catch (error) {
-    console.error("Error deleting attendance:", error)
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
