@@ -2,10 +2,32 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { usePermissions } from "@/lib/usePermissions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield } from "lucide-react";
 
 export default function OrganizationsPage() {
+  const permissions = usePermissions();
   const [empresas, setEmpresas] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+
+  // Verificar se tem permissão para gerenciar organizações
+  if (!permissions.isOwner) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">Gerenciar Empresas</h1>
+          <p className="text-muted-foreground">Gerencie as empresas do sistema.</p>
+        </div>
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Você não tem permissão para gerenciar empresas. Apenas OWNERS podem acessar esta área.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   React.useEffect(() => {
     fetch("/api/organizations")

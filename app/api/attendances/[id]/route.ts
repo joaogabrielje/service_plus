@@ -55,6 +55,18 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const attendanceId = params.id
     console.log('attendanceId', attendanceId, 'checkIn', checkIn, 'checkOut', checkOut);
 
+    // Validação de data/hora: saída deve ser posterior à entrada
+    if (checkOut && checkIn) {
+      const entryDateTime = new Date(checkIn)
+      const exitDateTime = new Date(checkOut)
+      
+      if (exitDateTime <= entryDateTime) {
+        return NextResponse.json({ 
+          error: "A data e hora de saída deve ser posterior à data e hora de entrada" 
+        }, { status: 400 })
+      }
+    }
+
     // Verify the attendance belongs to the user
     const existingAttendance = await prisma.attendance.findFirst({
       where: {

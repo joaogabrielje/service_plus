@@ -35,17 +35,21 @@ export async function POST(request: Request) {
       tipoPessoa, obs, tags, preferredContact, customFields
     } = body
 
-    // Busca o orgId do usuário logado
-    const membership = await prisma.membership.findFirst({
-      where: { userId, status: "ACTIVE" },
-      orderBy: { createdAt: "desc" }
-    })
-    const orgId = membership?.orgId
+    // Busca o orgId do usuário logado (se não foi fornecido no body)
+    let orgId = body.orgId
     if (!orgId) {
-      console.error("[CUSTOMER POST] Membership não encontrada para userId:", userId, "Session:", session)
+      const membership = await prisma.membership.findFirst({
+        where: { userId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" }
+      })
+      orgId = membership?.orgId
+      if (!orgId) {
+        console.error("[CUSTOMER POST] Membership não encontrada para userId:", userId, "Session:", session)
+        return NextResponse.json({ error: "Usuário não vinculado a uma organização" }, { status: 400 })
+      }
     }
-    if (!name || name.length < 3 || !orgId) {
-      return NextResponse.json({ error: "Dados obrigatórios ausentes" }, { status: 400 })
+    if (!name || name.length < 3) {
+      return NextResponse.json({ error: "Nome é obrigatório e deve ter pelo menos 3 caracteres" }, { status: 400 })
     }
     const customer = await prisma.customer.create({
       data: {

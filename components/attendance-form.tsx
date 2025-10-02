@@ -57,20 +57,38 @@ export function AttendanceForm({ onSuccess }: AttendanceFormProps) {
 
   // Buscar orgId da empresa padrão (pode ser ajustado para empresa selecionada)
   useEffect(() => {
+    if (!orgId) {
+      console.log('AttendanceForm: orgId não disponível ainda:', orgId)
+      return
+    }
+    
+    console.log('AttendanceForm: Carregando dados para orgId:', orgId)
+    
     async function fetchSupportTypes() {
       try {
         const res = await fetch(`/api/support-type?orgId=${orgId}`)
         const data = await res.json()
-        if (res.ok) setSupportTypes(data.types)
-      } catch {}
+        if (res.ok) {
+          setSupportTypes(data.types)
+          console.log('Support types carregados:', data.types.length, 'tipos')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar support types:', error)
+      }
     }
     fetchSupportTypes()
+    
     async function fetchCustomers() {
       try {
         const res = await fetch(`/api/customers?org=${orgId}`)
         const data = await res.json()
-        if (res.ok) setCustomers(data.customers)
-      } catch {}
+        if (res.ok) {
+          setCustomers(data.customers)
+          console.log('Clientes carregados:', data.customers.length, 'clientes')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error)
+      }
     }
     fetchCustomers()
   }, [orgId])
@@ -91,6 +109,24 @@ export function AttendanceForm({ onSuccess }: AttendanceFormProps) {
     setError("")
     setSuccess("")
 
+    // Validação de data/hora
+    if (!checkIn) {
+      setError("Data e hora de entrada são obrigatórias")
+      setIsLoading(false)
+      return
+    }
+
+    if (checkOut && checkIn) {
+      const entryDateTime = new Date(checkIn)
+      const exitDateTime = new Date(checkOut)
+      
+      if (exitDateTime <= entryDateTime) {
+        setError("A data e hora de saída deve ser posterior à data e hora de entrada")
+        setIsLoading(false)
+        return
+      }
+    }
+
     let finalCustomerId = customerId
     // Se não selecionou cliente, mas digitou nome
     if (!finalCustomerId && customerName.trim()) {
@@ -103,7 +139,7 @@ export function AttendanceForm({ onSuccess }: AttendanceFormProps) {
         const res = await fetch("/api/customers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: customerName.trim(), orgId })
+          body: JSON.stringify({ name: customerName.trim() })
         })
         const data = await res.json()
         if (res.ok && data.customer?.id) {
@@ -189,14 +225,44 @@ export function AttendanceForm({ onSuccess }: AttendanceFormProps) {
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <Label htmlFor="checkOut">Saída (opcional)</Label>
+              <Label htmlFor="checkOut">
+                Saída (opcional)
+                {checkIn && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (deve ser após {checkIn.replace('T', ' ')})
+                  </span>
+                )}
+              </Label>
               <div className="flex space-x-2">
                 <Input
                   id="checkOut"
                   type="datetime-local"
                   value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="border-primary"
+                  min={checkIn} // Define o mínimo como a data de entrada
+                  onChange={(e) => {
+                    const newCheckOut = e.target.value
+                    setCheckOut(newCheckOut)
+                    
+                    // Validação em tempo real
+                    if (checkIn && newCheckOut) {
+                      const entryDateTime = new Date(checkIn)
+                      const exitDateTime = new Date(newCheckOut)
+                      
+                      if (exitDateTime <= entryDateTime) {
+                        setError("A data e hora de saída deve ser posterior à data e hora de entrada")
+                      } else {
+                        // Limpa o erro se a validação passou
+                        if (error.includes("data e hora de saída deve ser posterior")) {
+                          setError("")
+                        }
+                      }
+                    }
+                  }}
+                  className={`border-primary ${
+                    checkIn && checkOut && new Date(checkOut) <= new Date(checkIn) 
+                      ? 'border-red-500 bg-red-50' 
+                      : ''
+                  }`}
                 />
                 <Button type="button" variant="outline" className="border border-secondary" onClick={handleQuickCheckOut}>
                   Agora

@@ -1,7 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma";
 import { validarCNPJ } from "@/utils/validateCnpj";
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any)?.role
+
+    // Verificar se tem permissão para editar organizações
+    if (userRole !== "OWNER") {
+      return NextResponse.json({ error: "Sem permissão para editar organizações" }, { status: 403 })
+    }
+
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const cnpj = formData.get("cnpj") as string;
@@ -68,11 +85,22 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any)?.role
+
+    // Verificar se tem permissão para ver organizações
+    if (userRole !== "OWNER" && userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Sem permissão para ver organizações" }, { status: 403 })
+    }
+
     const org = await prisma.organization.findUnique({ where: { id: params.id } });
     if (!org) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });

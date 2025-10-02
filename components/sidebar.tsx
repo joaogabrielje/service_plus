@@ -5,14 +5,22 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Clock, BarChart3, Users, Settings, LogOut, Menu, X, Home } from "lucide-react"
+import { Clock, BarChart3, Users, Settings, LogOut, Menu, X, Home, Shield, UserCog } from "lucide-react"
 import { signOut } from "next-auth/react"
+import { usePermissions } from "@/lib/usePermissions"
 
-const navigation = [
+const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Atendimentos", href: "/dashboard/attendances", icon: Clock },
   { name: "Clientes", href: "/dashboard/customers", icon: Users },
   { name: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
+]
+
+const adminNavigation = [
+  { name: "Gestão de Usuários", href: "/dashboard/users/manage", icon: UserCog, adminOnly: true },
+]
+
+const generalNavigation = [
   { name: "Usuários", href: "/dashboard/users", icon: Users },
   { name: "Configurações", href: "/dashboard/settings", icon: Settings },
 ]
@@ -20,6 +28,14 @@ const navigation = [
 export function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const permissions = usePermissions()
+
+  // Construir navegação baseada em permissões
+  const navigation = [
+    ...baseNavigation,
+    ...(permissions.canManageUsers ? adminNavigation : []),
+    ...generalNavigation,
+  ]
 
   const handleSignOut = async () => {
     try {

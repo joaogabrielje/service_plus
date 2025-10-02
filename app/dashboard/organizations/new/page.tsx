@@ -1,8 +1,30 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { usePermissions } from "@/lib/usePermissions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield } from "lucide-react";
 
 export default function NewOrganizationPage() {
+  const permissions = usePermissions();
+
+  // Verificar se tem permissão para criar organizações
+  if (!permissions.isOwner) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">Nova Empresa</h1>
+          <p className="text-muted-foreground">Cadastrar nova empresa no sistema.</p>
+        </div>
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Você não tem permissão para criar empresas. Apenas OWNERS podem acessar esta área.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);

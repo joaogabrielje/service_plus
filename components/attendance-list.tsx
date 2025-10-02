@@ -95,6 +95,12 @@ export function AttendanceList({ refresh }: AttendanceListProps) {
                       )}
                     </p>
                     <div className="text-xs text-muted-foreground mt-1">
+                      {/* Mostrar funcionário se for admin visualizando */}
+                      {(attendance as any).user && (
+                        <>
+                          <span className="font-semibold">Funcionário:</span> {(attendance as any).user.name} <br />
+                        </>
+                      )}
                       <span className="font-semibold">Cliente:</span> {attendance.customer?.name || "-"} <br />
                       <span className="font-semibold">Atendimento:</span> {
                         typeof attendance.supportType === "object" && attendance.supportType?.name

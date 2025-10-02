@@ -1,19 +1,95 @@
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma";
 import { validarCNPJ } from "@/utils/validateCnpj";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const orgs = await prisma.organization.findMany();
-    return NextResponse.json(orgs, { status: 200 });
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any)?.role
+    const userOrgId = (session.user as any)?.orgId
+
+    // Verificar se tem permissão para ver organizações
+    if (userRole !== "ADMIN" && userRole !== "OWNER") {
+      return NextResponse.json({ error: "Sem permissão para ver organizações" }, { status: 403 })
+    }
+
+    let whereClause: any = {
+      isDeleted: false,
+      status: "ACTIVE"
+    }
+
+    if (userRole === "ADMIN" && userOrgId) {
+      // Admin da empresa: vê apenas sua organização
+      whereClause.id = userOrgId
+    }
+    // Owner vê todas as organizações (sem filtro adicional)
+
+    const organizations = await prisma.organization.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        cnpj: true,
+        city: true,
+        status: true,
+        createdAt: true,
+        _count: {
+          select: {
+            memberships: {
+              where: {
+                isDeleted: false,
+                status: "ACTIVE"
+              }
+            }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    // Formatar dados para retorno
+    const formattedOrganizations = organizations.map(org => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      cnpj: org.cnpj,
+      city: org.city,
+      status: org.status,
+      createdAt: org.createdAt,
+      userCount: org._count.memberships
+    }))
+
+    return NextResponse.json({ organizations: formattedOrganizations })
   } catch (error) {
-    return NextResponse.json([], { status: 200 });
+    console.error("Error fetching organizations:", error)
+    return NextResponse.json({ organizations: [] }, { status: 200 })
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any)?.role
+
+    // Verificar se tem permissão para criar organizações
+    if (userRole !== "OWNER") {
+      return NextResponse.json({ error: "Sem permissão para criar organizações" }, { status: 403 })
+    }
+
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const cnpj = formData.get("cnpj") as string;

@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
+    const userId = session.user.id
+    const userRole = (session?.user as any)?.role
+    const userOrgId = (session?.user as any)?.orgId
+
     const now = new Date()
     const todayStart = startOfDay(now)
     const todayEnd = endOfDay(now)
@@ -20,10 +24,24 @@ export async function GET(request: NextRequest) {
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
 
+    // Definir filtro baseado no role
+    let whereClause: any = {}
+    
+    if (userRole === "ADMIN" && userOrgId) {
+      // Admin da empresa: stats de toda a organização
+      whereClause = { orgId: userOrgId }
+    } else if (userRole === "OWNER") {
+      // Owner: stats de tudo
+      whereClause = {}
+    } else {
+      // Funcionário comum: apenas próprios dados
+      whereClause = { userId: userId }
+    }
+
     // Get today's attendances
     const todayAttendances = await prisma.attendance.findMany({
       where: {
-        userId: session.user.id,
+        ...whereClause,
         checkIn: {
           gte: todayStart,
           lte: todayEnd,
@@ -34,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Get this week's attendances
     const weekAttendances = await prisma.attendance.findMany({
       where: {
-        userId: session.user.id,
+        ...whereClause,
         checkIn: {
           gte: weekStart,
           lte: weekEnd,
@@ -45,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Get this month's attendances
     const monthAttendances = await prisma.attendance.findMany({
       where: {
-        userId: session.user.id,
+        ...whereClause,
         checkIn: {
           gte: monthStart,
           lte: monthEnd,

@@ -3,10 +3,32 @@
 import React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { usePermissions } from "@/lib/usePermissions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield } from "lucide-react";
 
 export default function EditOrganizationPage() {
   const params = useParams();
   const router = useRouter();
+  const permissions = usePermissions();
+
+  // Verificar se tem permissão para editar organizações
+  if (!permissions.isOwner) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">Editar Empresa</h1>
+          <p className="text-muted-foreground">Editar dados da empresa.</p>
+        </div>
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Você não tem permissão para editar empresas. Apenas OWNERS podem acessar esta área.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   const [org, setOrg] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [orgUsers, setOrgUsers] = React.useState<any[]>([]);

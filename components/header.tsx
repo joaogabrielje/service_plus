@@ -17,19 +17,19 @@ export function DashboardHeader() {
       .slice(0, 2)
   }
 
-  const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const isOwner = (session?.user as any)?.role === "OWNER";
   
   // Debug: log session data
   console.log('Session data:', session);
   console.log('User role:', (session?.user as any)?.role);
-  console.log('Is admin:', isAdmin);
+  console.log('Is owner:', isOwner);
 
   return (
     <header className="bg-background border-b border-border px-6 sticky top-0 z-30" style={{ height: '65px' }}>
       <div className="flex items-center justify-between h-full w-full">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          {isAdmin && (
+          {isOwner && (
             <Button type="button" variant="outline" className="border border-secondary">
               <a href="/dashboard/organizations">Gerenciar Empresas</a>
             </Button>
